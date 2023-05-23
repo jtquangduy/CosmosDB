@@ -54,16 +54,46 @@ string containerName = "Orders";
 //    Console.WriteLine("Request Units {0}", response.RequestCharge);
 //}
 
-await ReadItem();
+//await ReadItem();
 
-async Task ReadItem()
+//async Task ReadItem()
+//{
+//    CosmosClient cosmosClient = new CosmosClient(cosmosEndpointUri, cosmosDBKey);
+
+//    Database database = cosmosClient.GetDatabase(databaseName);
+//    Container container = database.GetContainer(containerName);
+
+//    string sqlQuery = "SELECT o.orderId,o.category,o.quantity FROM Orders o";
+
+//    QueryDefinition queryDefinition = new QueryDefinition(sqlQuery);
+
+//    FeedIterator<Order> feedIterator = container.GetItemQueryIterator<Order>(queryDefinition);
+
+//    while (feedIterator.HasMoreResults)
+//    {
+//        FeedResponse<Order> orders = await feedIterator.ReadNextAsync();
+//        foreach (Order order in orders)
+//        {
+//            Console.WriteLine("Order Id {0}", order.orderId);
+//            Console.WriteLine("Category {0}", order.category);
+//            Console.WriteLine("Quantity {0}", order.quantity);
+//        }
+//    }
+//}
+
+await ReplaceItem("O1");
+
+async Task ReplaceItem(string orderId)
 {
     CosmosClient cosmosClient = new CosmosClient(cosmosEndpointUri, cosmosDBKey);
 
     Database database = cosmosClient.GetDatabase(databaseName);
     Container container = database.GetContainer(containerName);
 
-    string sqlQuery = "SELECT o.orderId,o.category,o.quantity FROM Orders o";
+    string sqlQuery = $"SELECT o.id,o.category FROM Orders o WHERE o.orderId='{orderId}'";
+
+    string id = "";
+    string category = "";
 
     QueryDefinition queryDefinition = new QueryDefinition(sqlQuery);
 
@@ -74,9 +104,17 @@ async Task ReadItem()
         FeedResponse<Order> orders = await feedIterator.ReadNextAsync();
         foreach (Order order in orders)
         {
-            Console.WriteLine("Order Id {0}", order.orderId);
-            Console.WriteLine("Category {0}", order.category);
-            Console.WriteLine("Quantity {0}", order.quantity);
+            id = order.id;
+            category = order.category;
         }
     }
+
+    ItemResponse<Order> response = await container.ReadItemAsync<Order>(id, new PartitionKey(category));
+
+    var item = response.Resource;
+    item.quantity = 150;
+
+    await container.ReplaceItemAsync<Order>(item, id, new PartitionKey(category));
+
+    Console.WriteLine("Item is updated");
 }
