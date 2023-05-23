@@ -28,28 +28,55 @@ string containerName = "Orders";
 
 //}
 
-await AddItem("O1", "Laptop", 100);
-await AddItem("O2", "Mobiles", 200);
-await AddItem("O3", "Desktop", 75);
-await AddItem("04", "Laptop", 25);
+//await AddItem("O1", "Laptop", 100);
+//await AddItem("O2", "Mobiles", 200);
+//await AddItem("O3", "Desktop", 75);
+//await AddItem("04", "Laptop", 25);
 
-async Task AddItem(string orderId, string category, int quantity)
+//async Task AddItem(string orderId, string category, int quantity)
+//{
+//    CosmosClient cosmosClient = new CosmosClient(cosmosEndpointUri, cosmosDBKey);
+
+//    Database database = cosmosClient.GetDatabase(databaseName);
+//    Container container = database.GetContainer(containerName);
+
+//    Order order = new Order()
+//    {
+//        id = Guid.NewGuid().ToString(),
+//        orderId = orderId,
+//        category = category,
+//        quantity = quantity
+//    };
+
+//    ItemResponse<Order> response = await container.CreateItemAsync<Order>(order, new PartitionKey(category));
+
+//    Console.WriteLine("Added item with Order Id {0}", order.orderId);
+//    Console.WriteLine("Request Units {0}", response.RequestCharge);
+//}
+
+await ReadItem();
+
+async Task ReadItem()
 {
     CosmosClient cosmosClient = new CosmosClient(cosmosEndpointUri, cosmosDBKey);
 
     Database database = cosmosClient.GetDatabase(databaseName);
     Container container = database.GetContainer(containerName);
 
-    Order order = new Order()
+    string sqlQuery = "SELECT o.orderId,o.category,o.quantity FROM Orders o";
+
+    QueryDefinition queryDefinition = new QueryDefinition(sqlQuery);
+
+    FeedIterator<Order> feedIterator = container.GetItemQueryIterator<Order>(queryDefinition);
+
+    while (feedIterator.HasMoreResults)
     {
-        id = Guid.NewGuid().ToString(),
-        orderId = orderId,
-        category = category,
-        quantity = quantity
-    };
-
-    ItemResponse<Order> response = await container.CreateItemAsync<Order>(order, new PartitionKey(category));
-
-    Console.WriteLine("Added item with Order Id {0}", order.orderId);
-    Console.WriteLine("Request Units {0}", response.RequestCharge);
+        FeedResponse<Order> orders = await feedIterator.ReadNextAsync();
+        foreach (Order order in orders)
+        {
+            Console.WriteLine("Order Id {0}", order.orderId);
+            Console.WriteLine("Category {0}", order.category);
+            Console.WriteLine("Quantity {0}", order.quantity);
+        }
+    }
 }
