@@ -81,9 +81,47 @@ string containerName = "Orders";
 //    }
 //}
 
-await ReplaceItem("O1");
+//await ReplaceItem("O1");
 
-async Task ReplaceItem(string orderId)
+//async Task ReplaceItem(string orderId)
+//{
+//    CosmosClient cosmosClient = new CosmosClient(cosmosEndpointUri, cosmosDBKey);
+
+//    Database database = cosmosClient.GetDatabase(databaseName);
+//    Container container = database.GetContainer(containerName);
+
+//    string sqlQuery = $"SELECT o.id,o.category FROM Orders o WHERE o.orderId='{orderId}'";
+
+//    string id = "";
+//    string category = "";
+
+//    QueryDefinition queryDefinition = new QueryDefinition(sqlQuery);
+
+//    FeedIterator<Order> feedIterator = container.GetItemQueryIterator<Order>(queryDefinition);
+
+//    while (feedIterator.HasMoreResults)
+//    {
+//        FeedResponse<Order> orders = await feedIterator.ReadNextAsync();
+//        foreach (Order order in orders)
+//        {
+//            id = order.id;
+//            category = order.category;
+//        }
+//    }
+
+//    ItemResponse<Order> response = await container.ReadItemAsync<Order>(id, new PartitionKey(category));
+
+//    var item = response.Resource;
+//    item.quantity = 150;
+
+//    await container.ReplaceItemAsync<Order>(item, id, new PartitionKey(category));
+
+//    Console.WriteLine("Item is updated");
+//}
+
+await DeleteItem("O1");
+
+async Task DeleteItem(string orderId)
 {
     CosmosClient cosmosClient = new CosmosClient(cosmosEndpointUri, cosmosDBKey);
 
@@ -109,12 +147,10 @@ async Task ReplaceItem(string orderId)
         }
     }
 
-    ItemResponse<Order> response = await container.ReadItemAsync<Order>(id, new PartitionKey(category));
+    ItemResponse<Order> response = await container.DeleteItemAsync<Order>(id, new PartitionKey(category));
+    //var item = response.Resource;
 
-    var item = response.Resource;
-    item.quantity = 150;
+    //await container.DeleteItemAsync<Order>(id,new PartitionKey(category));
 
-    await container.ReplaceItemAsync<Order>(item, id, new PartitionKey(category));
-
-    Console.WriteLine("Item is updated");
+    Console.WriteLine("Item is deleted");
 }
