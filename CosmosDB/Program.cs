@@ -219,16 +219,50 @@ string containerCustomer = "Customers";
 //    Console.WriteLine("Added Customer with id: {0}", customerId);
 //}
 
-await ReadItem();
+//await ReadItem();
 
-async Task ReadItem()
+//async Task ReadItem()
+//{
+//    CosmosClient cosmosClient = new CosmosClient(cosmosEndpointUri, cosmosDBKey);
+
+//    Database database = cosmosClient.GetDatabase(databaseName);
+//    Container container = database.GetContainer(containerCustomer);
+
+//    string sqlQuery = "SELECT c.id,c.customerName,c.customerCity,c.orders FROM Customers c";
+
+//    QueryDefinition queryDefinition = new QueryDefinition(sqlQuery);
+
+//    FeedIterator<Customer> feedIterator = container.GetItemQueryIterator<Customer>(queryDefinition);
+
+//    while (feedIterator.HasMoreResults)
+//    {
+//        FeedResponse<Customer> customers = await feedIterator.ReadNextAsync();
+//        foreach (Customer customer in customers)
+//        {
+//            Console.WriteLine("Customer Id {0}", customer.customerId);
+//            Console.WriteLine("Customer Name {0}", customer.customerName);
+//            Console.WriteLine("Customer City {0}", customer.customerCity);
+//            foreach (Order order in customer.orders)
+//            {
+//                Console.WriteLine("Order Id {0}", order.orderId);
+//                Console.WriteLine("Category {0}", order.category);
+//                Console.WriteLine("Quantity {0}", order.quantity);
+//            }
+//        }
+//    }
+//}
+await AddItemArrayOfObject("C2", "06", "Desktop", 300);
+
+async Task AddItemArrayOfObject(string customerId, string orderId, string category, int quantity)
 {
     CosmosClient cosmosClient = new CosmosClient(cosmosEndpointUri, cosmosDBKey);
 
     Database database = cosmosClient.GetDatabase(databaseName);
     Container container = database.GetContainer(containerCustomer);
 
-    string sqlQuery = "SELECT c.id,c.customerName,c.customerCity,c.orders FROM Customers c";
+    string sqlQuery = $"SELECT c.id,c.customerName FROM Customers c WHERE c.id='{customerId}'";
+
+    string customerName = "";
 
     QueryDefinition queryDefinition = new QueryDefinition(sqlQuery);
 
@@ -239,15 +273,16 @@ async Task ReadItem()
         FeedResponse<Customer> customers = await feedIterator.ReadNextAsync();
         foreach (Customer customer in customers)
         {
-            Console.WriteLine("Customer Id {0}", customer.customerId);
-            Console.WriteLine("Customer Name {0}", customer.customerName);
-            Console.WriteLine("Customer City {0}", customer.customerCity);
-            foreach (Order order in customer.orders)
-            {
-                Console.WriteLine("Order Id {0}", order.orderId);
-                Console.WriteLine("Category {0}", order.category);
-                Console.WriteLine("Quantity {0}", order.quantity);
-            }
+            customerName = customer.customerName;
         }
     }
+
+    ItemResponse<Customer> response = await container.ReadItemAsync<Customer>(customerId, new PartitionKey(customerName));
+
+    var item = response.Resource;
+    item.orders.Add(new Order { orderId = orderId, category = category, quantity = quantity });
+
+    await container.ReplaceItemAsync<Customer>(item, customerId, new PartitionKey(customerName));
+
+    Console.WriteLine("Item is updated");
 }
