@@ -9,7 +9,7 @@ string containerCustomer = "Customers";
 
 //await CreateDatabase("qddb");
 //await CreateContainer("qddb","Orders","/category");
-await CreateContainer(databaseName, containerCustomer, "/customerName");
+//await CreateContainer(databaseName, containerCustomer, "/customerName");
 
 //async Task CreateDatabase(string dbName)
 //{
@@ -19,16 +19,16 @@ await CreateContainer(databaseName, containerCustomer, "/customerName");
 //    Console.WriteLine("Database created");
 //}
 
-async Task CreateContainer(string databaseName, string containerName, string partitionKey)
-{
-    CosmosClient cosmosClient = new CosmosClient(cosmosEndpointUri, cosmosDBKey);
+//async Task CreateContainer(string databaseName, string containerName, string partitionKey)
+//{
+//    CosmosClient cosmosClient = new CosmosClient(cosmosEndpointUri, cosmosDBKey);
 
-    Database database = cosmosClient.GetDatabase(databaseName);
+//    Database database = cosmosClient.GetDatabase(databaseName);
 
-    await database.CreateContainerAsync(containerName, partitionKey);
-    Console.WriteLine("Container created");
+//    await database.CreateContainerAsync(containerName, partitionKey);
+//    Console.WriteLine("Container created");
 
-}
+//}
 
 //await AddItem("O1", "Laptop", 100);
 //await AddItem("O2", "Mobiles", 200);
@@ -157,64 +157,97 @@ async Task CreateContainer(string databaseName, string containerName, string par
 //    Console.WriteLine("Item is deleted");
 //}
 
-await AddItem("C1", "CustomeA", "New York", new List<Order>()
-{
-    new Order()
-    {
-        orderId="O1",
-        category="Laptop",
-        quantity=100
-    },
-    new Order()
-    {
-        orderId="O2",
-        category="Mobile",
-        quantity=10
-    }
-});
+//await AddItem("C1", "CustomeA", "New York", new List<Order>()
+//{
+//    new Order()
+//    {
+//        orderId="O1",
+//        category="Laptop",
+//        quantity=100
+//    },
+//    new Order()
+//    {
+//        orderId="O2",
+//        category="Mobile",
+//        quantity=10
+//    }
+//});
 
-await AddItem("C2", "CustomeB", "Chicago", new List<Order>()
-{
-    new Order()
-    {
-        orderId="O3",
-        category="Laptop",
-        quantity=20
-    }
-});
+//await AddItem("C2", "CustomeB", "Chicago", new List<Order>()
+//{
+//    new Order()
+//    {
+//        orderId="O3",
+//        category="Laptop",
+//        quantity=20
+//    }
+//});
 
-await AddItem("C3", "CustomeC", "Miami", new List<Order>()
-{
-    new Order()
-    {
-        orderId="O4",
-        category="Desktop",
-        quantity=30
-    },
-    new Order()
-    {
-        orderId="O5",
-        category="Mobile",
-        quantity=40
-    }
-});
+//await AddItem("C3", "CustomeC", "Miami", new List<Order>()
+//{
+//    new Order()
+//    {
+//        orderId="O4",
+//        category="Desktop",
+//        quantity=30
+//    },
+//    new Order()
+//    {
+//        orderId="O5",
+//        category="Mobile",
+//        quantity=40
+//    }
+//});
 
-async Task AddItem(string customerId, string customerName, string customerCity, List<Order> orders)
+//async Task AddItem(string customerId, string customerName, string customerCity, List<Order> orders)
+//{
+//    CosmosClient cosmosClient = new CosmosClient(cosmosEndpointUri, cosmosDBKey);
+
+//    Database database = cosmosClient.GetDatabase(databaseName);
+//    Container container = database.GetContainer(containerCustomer);
+
+//    Customer customer = new Customer()
+//    {
+//        customerId = customerId,
+//        customerName = customerName,
+//        customerCity = customerCity,
+//        orders = orders
+//    };
+
+//    await container.CreateItemAsync<Customer>(customer, new PartitionKey(customerName));
+
+//    Console.WriteLine("Added Customer with id: {0}", customerId);
+//}
+
+await ReadItem();
+
+async Task ReadItem()
 {
     CosmosClient cosmosClient = new CosmosClient(cosmosEndpointUri, cosmosDBKey);
 
     Database database = cosmosClient.GetDatabase(databaseName);
     Container container = database.GetContainer(containerCustomer);
 
-    Customer customer = new Customer()
+    string sqlQuery = "SELECT c.id,c.customerName,c.customerCity,c.orders FROM Customers c";
+
+    QueryDefinition queryDefinition = new QueryDefinition(sqlQuery);
+
+    FeedIterator<Customer> feedIterator = container.GetItemQueryIterator<Customer>(queryDefinition);
+
+    while (feedIterator.HasMoreResults)
     {
-        customerId = customerId,
-        customerName = customerName,
-        customerCity = customerCity,
-        orders = orders
-    };
-
-    await container.CreateItemAsync<Customer>(customer, new PartitionKey(customerName));
-
-    Console.WriteLine("Added Customer with id: {0}", customerId);
+        FeedResponse<Customer> customers = await feedIterator.ReadNextAsync();
+        foreach (Customer customer in customers)
+        {
+            Console.WriteLine("Customer Id {0}", customer.customerId);
+            Console.WriteLine("Customer Name {0}", customer.customerName);
+            Console.WriteLine("Customer City {0}", customer.customerCity);
+            foreach (Order order in customer.orders)
+            {
+                Console.WriteLine("Order Id {0}", order.orderId);
+                Console.WriteLine("Category {0}", order.category);
+                Console.WriteLine("Quantity {0}", order.quantity);
+            }
+        }
+    }
 }
