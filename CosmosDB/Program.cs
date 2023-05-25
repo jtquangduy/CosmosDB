@@ -1,11 +1,66 @@
-﻿using Microsoft.Azure.Cosmos;
+﻿using CosmosDB;
+using Microsoft.Azure.Cosmos;
 
 string cosmosEndpointUri = "https://jtappaccount.documents.azure.com:443/";
 string cosmosDBKey = "4BEh0nnOwf6N8cQHjFs992TT0vmzlSoHQn3AYHMcPBkhu2Roz99GMuIx2wQUL1jiBUSB1UkWPYPdACDbL1x8oA==";
 string databaseName = "appdb";
 string containerName = "Orders";
 string containerCustomer = "Customers";
+string leasesContainerName = "leases";
 
+await StartChangeProcessor();
+
+async Task StartChangeProcessor()
+{
+    CosmosClient cosmosClient = new CosmosClient(cosmosEndpointUri, cosmosDBKey);
+
+    Container container = cosmosClient.GetContainer(databaseName, leasesContainerName);
+
+    ChangeFeedProcessor changeFeedProcessor = cosmosClient.GetContainer(databaseName, containerName)
+        .GetChangeFeedProcessorBuilder<Order>(processorName: "ManageChanges", onChangesDelegate: ManageChanges)
+        .WithInstanceName("appHost")
+        .WithLeaseContainer(container)
+        .Build();
+
+    Console.WriteLine("Starting the Change Feed Processor");
+    await changeFeedProcessor.StartAsync();
+    Console.Read();
+    await changeFeedProcessor.StopAsync();
+}
+
+static async Task ManageChanges(ChangeFeedProcessorContext context, IReadOnlyCollection<Order> itemCollection, CancellationToken cancellationToken)
+{
+    foreach (Order item in itemCollection)
+    {
+        Console.WriteLine("Id {0}", item.id);
+        Console.WriteLine("Order Id {0}", item.orderId);
+        Console.WriteLine("Creation time {0}", item.creationTime);
+    }
+}
+
+/*
+await CreateItems();
+
+async Task CreateItems()
+{
+    CosmosClient cosmosClient;
+    cosmosClient = new CosmosClient(cosmosEndpointUri, cosmosDBKey);
+
+    Container container = cosmosClient.GetContainer(databaseName, containerName);
+
+    dynamic orderItem = new
+        {
+            id = Guid.NewGuid().ToString(),
+            orderId = "O5",
+            category = "Tivi"
+        };
+
+    await container.CreateItemAsync(orderItem, null, new ItemRequestOptions { PreTriggers = new List<string> { "validateItem" } });
+
+    Console.WriteLine("Item has been inserted");
+};
+*/
+/*
 await CallStoredProcedure();
 
 async Task CallStoredProcedure()
@@ -40,7 +95,8 @@ async Task CallStoredProcedure()
     var result = await container.Scripts.ExecuteStoredProcedureAsync<string>("createItems", new PartitionKey("Laptop"), new[] { orderItems });
 
     Console.WriteLine(result);
-}
+}*/
+
 /*
 function createItems(items)
 {
