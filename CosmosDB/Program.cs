@@ -1,11 +1,26 @@
 ﻿using CosmosDB;
 using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Cosmos.Serialization.HybridRow;
 
-string cosmosEndpointUri = "https://qdapp.documents.azure.com:443/";
-string cosmosDBKey = "UirRsYNaZmZ0zDaZhJ557omccnaU1pZRHrx0s3hPAsRLyZkXb5BFfwP4b22jWQWR3FTCkzEyuE7dACDbLJB73g==";
-string databaseName = "qddb";
+string cosmosEndpointUri = "https://jtappaccount.documents.azure.com:443/";
+string cosmosDBKey = "4BEh0nnOwf6N8cQHjFs992TT0vmzlSoHQn3AYHMcPBkhu2Roz99GMuIx2wQUL1jiBUSB1UkWPYPdACDbL1x8oA==";
+string databaseName = "appdb";
 string containerName = "Orders";
 string containerCustomer = "Customers";
+
+await CallStoredProcedure();
+
+async Task CallStoredProcedure()
+{
+    CosmosClient cosmosClient;
+    cosmosClient = new CosmosClient(cosmosEndpointUri, cosmosDBKey);
+
+    Container container = cosmosClient.GetContainer(databaseName, containerName);
+
+    var result = await container.Scripts.ExecuteStoredProcedureAsync<string>("Display",new PartitionKey(""),null);
+    
+    Console.WriteLine(result);
+}
 
 //await CreateDatabase("qddb");
 //await CreateContainer("qddb","Orders","/category");
@@ -251,38 +266,40 @@ string containerCustomer = "Customers";
 //        }
 //    }
 //}
-await AddItemArrayOfObject("C2", "06", "Desktop", 300);
 
-async Task AddItemArrayOfObject(string customerId, string orderId, string category, int quantity)
-{
-    CosmosClient cosmosClient = new CosmosClient(cosmosEndpointUri, cosmosDBKey);
 
-    Database database = cosmosClient.GetDatabase(databaseName);
-    Container container = database.GetContainer(containerCustomer);
+//await AddItemArrayOfObject("C2", "06", "Desktop", 300);
 
-    string sqlQuery = $"SELECT c.id,c.customerName FROM Customers c WHERE c.id='{customerId}'";
+//async Task AddItemArrayOfObject(string customerId, string orderId, string category, int quantity)
+//{
+//    CosmosClient cosmosClient = new CosmosClient(cosmosEndpointUri, cosmosDBKey);
 
-    string customerName = "";
+//    Database database = cosmosClient.GetDatabase(databaseName);
+//    Container container = database.GetContainer(containerCustomer);
 
-    QueryDefinition queryDefinition = new QueryDefinition(sqlQuery);
+//    string sqlQuery = $"SELECT c.id,c.customerName FROM Customers c WHERE c.id='{customerId}'";
 
-    FeedIterator<Customer> feedIterator = container.GetItemQueryIterator<Customer>(queryDefinition);
+//    string customerName = "";
 
-    while (feedIterator.HasMoreResults)
-    {
-        FeedResponse<Customer> customers = await feedIterator.ReadNextAsync();
-        foreach (Customer customer in customers)
-        {
-            customerName = customer.customerName;
-        }
-    }
+//    QueryDefinition queryDefinition = new QueryDefinition(sqlQuery);
 
-    ItemResponse<Customer> response = await container.ReadItemAsync<Customer>(customerId, new PartitionKey(customerName));
+//    FeedIterator<Customer> feedIterator = container.GetItemQueryIterator<Customer>(queryDefinition);
 
-    var item = response.Resource;
-    item.orders.Add(new Order { orderId = orderId, category = category, quantity = quantity });
+//    while (feedIterator.HasMoreResults)
+//    {
+//        FeedResponse<Customer> customers = await feedIterator.ReadNextAsync();
+//        foreach (Customer customer in customers)
+//        {
+//            customerName = customer.customerName;
+//        }
+//    }
 
-    await container.ReplaceItemAsync<Customer>(item, customerId, new PartitionKey(customerName));
+//    ItemResponse<Customer> response = await container.ReadItemAsync<Customer>(customerId, new PartitionKey(customerName));
 
-    Console.WriteLine("Item is updated");
-}
+//    var item = response.Resource;
+//    item.orders.Add(new Order { orderId = orderId, category = category, quantity = quantity });
+
+//    await container.ReplaceItemAsync<Customer>(item, customerId, new PartitionKey(customerName));
+
+//    Console.WriteLine("Item is updated");
+//}
