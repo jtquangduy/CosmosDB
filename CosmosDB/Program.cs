@@ -1,6 +1,4 @@
-﻿using CosmosDB;
-using Microsoft.Azure.Cosmos;
-using Microsoft.Azure.Cosmos.Serialization.HybridRow;
+﻿using Microsoft.Azure.Cosmos;
 
 string cosmosEndpointUri = "https://jtappaccount.documents.azure.com:443/";
 string cosmosDBKey = "4BEh0nnOwf6N8cQHjFs992TT0vmzlSoHQn3AYHMcPBkhu2Roz99GMuIx2wQUL1jiBUSB1UkWPYPdACDbL1x8oA==";
@@ -17,10 +15,93 @@ async Task CallStoredProcedure()
 
     Container container = cosmosClient.GetContainer(databaseName, containerName);
 
-    var result = await container.Scripts.ExecuteStoredProcedureAsync<string>("Display",new PartitionKey(""),null);
-    
+    dynamic[] orderItems = new dynamic[]
+    {
+        new {
+            id = Guid.NewGuid().ToString(),
+            orderId = "01",
+            category  = "Laptop",
+            quantity  = 100
+        },
+        new {
+            id = Guid.NewGuid().ToString(),
+            orderId = "02",
+            category  = "Laptop",
+            quantity  = 200
+        },
+        new {
+            id = Guid.NewGuid().ToString(),
+            orderId = "03",
+            category  = "Laptop",
+            quantity  = 75
+        },
+    };
+
+    var result = await container.Scripts.ExecuteStoredProcedureAsync<string>("createItems", new PartitionKey("Laptop"), new[] { orderItems });
+
     Console.WriteLine(result);
 }
+/*
+function createItems(items)
+{
+    var context = getContext();
+    var response = context.getResponse();
+
+    if (!items)
+    {
+        response.setBody("Error: Items are undefined");
+        return;
+    }
+
+    var numOfItems = items.length;
+    checkLength(numOfItems);
+
+    for (let i = 0; i < numOfItems; i++)
+    {
+        createItem(items[i]);
+    }
+
+    response.setBody("Items added to collection");
+
+    function checkLength(itemLength)
+    {
+        if (itemLength == 0)
+        {
+            response.setBody("Error: There are no items to add");
+            return;
+        }
+    }
+
+    function createItem(item)
+    {
+        var collection = getContext().getCollection();
+        var collectionLink = collection.getSelfLink();
+        collection.createDocument(collectionLink, item);
+    }
+}*/
+
+/*
+await CallStoredProcedure();
+
+async Task CallStoredProcedure()
+{
+    CosmosClient cosmosClient;
+    cosmosClient = new CosmosClient(cosmosEndpointUri, cosmosDBKey);
+
+    Container container = cosmosClient.GetContainer(databaseName, containerName);
+
+    var result = await container.Scripts.ExecuteStoredProcedureAsync<string>("Display",new PartitionKey(""),null);
+
+    Console.WriteLine(result);
+}
+// In cosmosdb create a stored procedures
+function Display()
+{
+    var context = getContext();
+    var response = context.getResponse();
+
+    response.setBody("This is a stored procedure");
+}*/
 
 //await CreateDatabase("qddb");
 //await CreateContainer("qddb","Orders","/category");
@@ -266,7 +347,6 @@ async Task CallStoredProcedure()
 //        }
 //    }
 //}
-
 
 //await AddItemArrayOfObject("C2", "06", "Desktop", 300);
 
